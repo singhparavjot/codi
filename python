@@ -49,10 +49,14 @@ print("\nList of storage accounts in the resource group:")
 for account in accounts:
     print(f" - {account.name}")
 
-# Initialize BlobServiceClient using the new storage account key
+# Fetch storage account keys to use in BlobServiceClient
+keys = storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name)
+storage_account_key = keys.keys[0].value  # Use the first key
+
+# Correctly initialize the BlobServiceClient using the account name and key
 blob_service_client = BlobServiceClient(
-    f"https://{storage_account_name}.blob.core.windows.net",
-    credential=credential
+    account_url=f"https://{storage_account_name}.blob.core.windows.net",
+    credential=storage_account_key
 )
 
 # Create a new container in the storage account
@@ -63,7 +67,7 @@ print(f"\nContainer '{container_name}' created successfully in the storage accou
 sas_token = generate_container_sas(
     account_name=storage_account_name,
     container_name=container_name,
-    account_key=storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name).keys[0].value,
+    account_key=storage_account_key,
     permission=ContainerSasPermissions(read=True, write=True, delete=True, list=True),
     expiry=datetime.utcnow() + timedelta(hours=1)
 )
