@@ -1,0 +1,62 @@
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.storage.models import StorageAccountCreateParameters, Sku, Kind, PublicAccess
+from azure.storage.blob import BlobServiceClient, generate_container_sas, ContainerSasPermissions
+from datetime import datetime, timedelta
+
+# Replace these variables with your Azure details
+subscription_id = 'YOUR_SUBSCRIPTION_ID'  # Replace with your Azure Subscription ID
+resource_group_name = 'YOUR_EXISTING_RESOURCE_GROUP'  # Replace with your existing Resource Group Name
+storage_account_name = 'mystorageaccount1234'  # Must be globally unique
+location = 'eastus'  # Change as needed
+container_name = 'mycoolcontainer'
+
+# Authenticate using DefaultAzureCredential, which uses your current Azure CLI session
+credential = DefaultAzureCredential()
+
+# Initialize the StorageManagementClient
+storage_client = StorageManagementClient(credential, subscription_id)
+
+# Define the storage account parameters
+storage_account_params = StorageAccountCreateParameters(
+    sku=Sku(name='Standard_LRS'),  # Standard locally-redundant storage
+    kind=Kind.STORAGE_V2,  # General-purpose v2 storage account
+    location=location
+)
+
+# Create the storage account
+storage_account = storage_client.storage_accounts.begin_create(
+    resource_group_name,
+    storage_account_name,
+    storage_account_params
+).result()
+
+print(f"Storage account '{storage_account.name}' created successfully in location '{storage_account.location}'.")
+
+# List all storage accounts in the resource group
+accounts = storage_client.storage_accounts.list_by_resource_group(resource_group_name)
+print("\nList of storage accounts in the resource group:")
+for account in accounts:
+    print(f" - {account.name}")
+
+# Initialize BlobServiceClient using the new storage account key
+blob_service_client = BlobServiceClient(
+    f"https://{storage_account_name}.blob.core.windows.net",
+    credential=credential
+)
+
+# Create a new container in the storage account
+container_client = blob_service_client.create_container(container_name, public_access=PublicAccess.NONE)
+print(f"\nContainer '{container_name}' created successfully in the storage account '{storage_account_name}'.")
+
+# Generate a SAS URL for the container to demonstrate access control
+sas_token = generate_container_sas(
+    account_name=storage_account_name,
+    container_name=container_name,
+    account_key=storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name).keys[0].value,
+    permission=ContainerSasPermissions(read=True, write=True, delete=True, list=True),
+    expiry=datetime.utcnow() + timedelta(hours=1)
+)
+
+sas_url = f"https://{storage_account_name}.blob.core.windows.net/{container_name}?{sas_token}"
+print(f"\nGenerated SAS URL for container access (valid for 1 hour):\n{sas_url}")
