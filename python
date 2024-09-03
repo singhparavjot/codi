@@ -1,7 +1,7 @@
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
-from azure.mgmt.storage.models import StorageAccountCreateParameters, Sku, Kind, PublicAccess
+from azure.mgmt.storage.models import StorageAccountCreateParameters, Sku, Kind
 from azure.storage.blob import BlobServiceClient, generate_container_sas, ContainerSasPermissions
 from datetime import datetime, timedelta
 
@@ -59,8 +59,8 @@ blob_service_client = BlobServiceClient(
     credential=storage_account_key
 )
 
-# Create a new container in the storage account
-container_client = blob_service_client.create_container(container_name, public_access=PublicAccess.NONE)
+# Create a new container in the storage account without specifying public access
+container_client = blob_service_client.create_container(container_name)  # Removed public_access parameter
 print(f"\nContainer '{container_name}' created successfully in the storage account '{storage_account_name}'.")
 
 # Generate a SAS URL for the container to demonstrate access control
