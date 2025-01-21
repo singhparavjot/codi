@@ -1,0 +1,11 @@
+databricks runs submit --json '{
+  "tasks": [
+    {
+      "task_key": "run_sql_task",
+      "sql_task": {
+        "query": "/Workspace/YourFolder/YourFile.sql"
+      }
+    }
+  ],
+  "existing_cluster_id": "your-cluster-id"
+}'
